@@ -28,6 +28,38 @@ class UserDetails(APIView):
         return Response(serializer.data)
     
 
+class CustomPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
+
+class ReferralsList(APIView):
+    permission_classes = [IsAuthenticated]
+    pagination_class = CustomPagination
+
+    def get(self, request):
+        current_user = request.user  # Get the current authenticated user
+        referral_code = current_user.referral_code
+
+        if not referral_code:
+            return Response({'message': 'No referral code found for the current user'}, status=status.HTTP_400_BAD_REQUEST)
+
+        referred_users = CustomUser.objects.filter(referral_code=referral_code)
+
+        # Apply pagination
+        paginator = self.pagination_class()
+        paginated_users = paginator.paginate_queryset(referred_users, request)
+
+        serializer = UserSerializer(paginated_users, many=True)
+        # Extract timestamp of registration for each referral
+        referrals_with_timestamp = []
+        for referral in serializer.data:
+            user_id = referral['id']
+            timestamp = CustomUser.objects.get(id=user_id).date_joined
+            referral['timestamp_of_registration'] = timestamp
+            referrals_with_timestamp.append(referral)
+
+        return paginator.get_paginated_response(referrals_with_timestamp)
 
 
 
