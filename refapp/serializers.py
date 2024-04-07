@@ -12,10 +12,6 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('id', 'username', 'email', 'referral_code', 'timestamp')
 
 
-from rest_framework import serializers
-from django.contrib.auth import get_user_model
-from .models import CustomUser
-
 class UserRegisterSerializer(serializers.ModelSerializer):
     referral_code = serializers.CharField(max_length=10, required=False)
     points = serializers.IntegerField(read_only=True)
